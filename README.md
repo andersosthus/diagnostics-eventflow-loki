@@ -34,7 +34,7 @@ This output writes data to Loki. Here is an example showing all possible setting
     {
       "category": "outputFactory",
       "type": "Loki",
-      "qualifiedTypeName": "Microsoft.Diagnostics.EventFlow.Outputs.LokiOutputFactory, Microsoft.Diagnostics.EventFlow.Outputs.Loki"
+      "qualifiedTypeName": "Proactima.Diagnostics.EventFlow.Outputs.Loki.LokiOutputFactory, Proactima.Diagnostics.EventFlow.Outputs.Loki"
     }
   ],
   "schemaVersion": "2016-08-11"

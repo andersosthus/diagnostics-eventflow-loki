@@ -1,4 +1,5 @@
 ﻿using Microsoft.Diagnostics.EventFlow.Configuration;
+using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.EventFlow.Outputs.Configuration
 {

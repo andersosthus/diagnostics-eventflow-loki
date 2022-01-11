@@ -2,10 +2,16 @@
 using Microsoft.Diagnostics.EventFlow.Utilities;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.IO.Compression;
+using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Validation;
 
 namespace Microsoft.Diagnostics.EventFlow.Outputs.Loki
@@ -177,24 +183,26 @@ namespace Microsoft.Diagnostics.EventFlow.Outputs.Loki
         private async Task<HttpResponseMessage> SendGzipJsonAsync(LokiStreams streams)
         {
             var serializer = JsonSerializer.Create();
-            using var jsonStream = new MemoryStream();
-            using var sw = new StreamWriter(jsonStream);
-            using var jw = new JsonTextWriter(sw);
-            serializer.Serialize(jw, streams);
-            await jw.FlushAsync();
-            jsonStream.Position = 0;
+            using (var jsonStream = new MemoryStream())
+            using (var sw = new StreamWriter(jsonStream))
+            using (var jw = new JsonTextWriter(sw))
+            using (var compressed = new MemoryStream())
+            using (var compressor = new GZipStream(compressed, CompressionMode.Compress))
+            {
+                serializer.Serialize(jw, streams);
+                jw.Flush();
+                jsonStream.Position = 0;
 
-            using var compressed = new MemoryStream();
-            using var compressor = new GZipStream(compressed, CompressionMode.Compress);
-            jsonStream.CopyTo(compressor);
-            await compressor.FlushAsync();
-            compressed.Position = 0;
+                jsonStream.CopyTo(compressor);
+                await compressor.FlushAsync();
+                compressed.Position = 0;
 
-            var content = new ByteArrayContent(compressed.ToArray());
-            content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-            content.Headers.Add("Content-Encoding", "gzip");
+                var content = new ByteArrayContent(compressed.ToArray());
+                content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+                content.Headers.Add("Content-Encoding", "gzip");
 
-            return await httpClient.PostAsync(new Uri(configuration.LokiUri), content);
+                return await httpClient.PostAsync(new Uri(configuration.LokiUri), content);
+            }
         }
 
         private class StandardHttpClient : IHttpClient

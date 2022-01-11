@@ -1,4 +1,6 @@
-﻿namespace Microsoft.Diagnostics.EventFlow.Outputs.Loki
+﻿using System.Collections.Generic;
+
+namespace Microsoft.Diagnostics.EventFlow.Outputs.Loki
 {
     public struct LokiItem
     {

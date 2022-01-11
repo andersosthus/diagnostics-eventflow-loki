@@ -5,9 +5,18 @@
     <RootNamespace>Proactima.Diagnostics.EventFlow.Outputs.Loki</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Version>0.9.1</Version>
+    <Version>0.9.3</Version>
+	<PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+	
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.EventFlow.Core" Version="1.10.3" />
   </ItemGroup>

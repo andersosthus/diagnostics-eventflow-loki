@@ -12,11 +12,11 @@ Extensions to Microsoft Diagnostics EventFlow to output to Loki
 This output writes data to Loki. Here is an example showing all possible settings:
 ```json
 {
-	"inputs": [
-		{
-			"type": "Microsoft.Extensions.Logging"
-		}
-	],
+  "inputs": [
+    {
+      "type": "Microsoft.Extensions.Logging"
+    }
+  ],
   "filters": [],
   "outputs": [
     {

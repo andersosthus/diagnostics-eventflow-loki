@@ -19,16 +19,19 @@ namespace Console.ETW
             {
                 Task.Run(async () =>
                 {
-                    do
-                    {
-                        var count = _random.Next(0, 10);
-                        for (var i = 0; i < count; i++)
-                        {
-                            ETWSource.Log.TestEvent($"generated {count} messages - this is #{i}");
-                        }
+                    //do
+                    //{
+                    //    var count = _random.Next(0, 10);
+                    //    for (var i = 0; i < count; i++)
+                    //    {
+                    //        ETWSource.Log.TestEvent($"generated {count} messages - this is #{i}");
+                    //    }
 
-                        await Task.Delay(TimeSpan.FromSeconds(2));
-                    } while (true);
+                    //    await Task.Delay(TimeSpan.FromSeconds(2));
+                    //} while (true);
+
+                    await Task.Delay(TimeSpan.FromSeconds(2));
+                    ETWSource.Log.TestEvent($"generated message");
                 });
             });
 

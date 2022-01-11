@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Text;
 
-namespace Microsoft.Diagnostics.EventFlow.Outputs.Loki
+namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
 {
     public static class StreamGrouper
     {

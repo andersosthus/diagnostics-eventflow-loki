@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System.Collections.Generic;
 
-namespace Microsoft.Diagnostics.EventFlow.Outputs.Loki
+namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
 {
     public class LokiStreams
     {

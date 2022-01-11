@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Xunit;
 
-namespace Microsoft.Diagnostics.EventFlow.Outputs.Loki.Tests
+namespace Proactima.Diagnostics.EventFlow.Outputs.Loki.Tests
 {
     public class DescribeStreamGrouper
     {

@@ -3,7 +3,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 
-namespace Microsoft.Diagnostics.EventFlow.Outputs.Loki
+namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
 {
     public interface IHttpClient
     {

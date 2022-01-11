@@ -1,7 +1,8 @@
-﻿using Microsoft.Diagnostics.EventFlow.Outputs.Configuration;
+﻿using Microsoft.Diagnostics.EventFlow;
 using Microsoft.Diagnostics.EventFlow.Utilities;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
+using Proactima.Diagnostics.EventFlow.Outputs.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -14,7 +15,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Validation;
 
-namespace Microsoft.Diagnostics.EventFlow.Outputs.Loki
+namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
 {
     public class LokiOutput : IOutput
     {

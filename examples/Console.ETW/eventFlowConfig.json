@@ -1,0 +1,37 @@
+{
+  "inputs": [
+    {
+      "type": "ETW",
+      "providers": [
+        { "providerName": "ETWTestSource" }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "type": "Loki",
+      "lokiUri": "http://localhost:3100/loki/api/v1/push",
+      "gzipPayload": false,
+      "xScopeOrgId": "",
+      "fieldsToLabels": [ "EventName" ],
+      "staticLabels": {
+        "environment": "dev"
+      }
+
+    }
+  ],
+  "filters": [
+    {
+      "type": "drop",
+      "include": "EventName == ManifestData"
+    }
+  ],
+  "extensions": [
+    {
+      "category": "outputFactory",
+      "type": "Loki",
+      "qualifiedTypeName": "Microsoft.Diagnostics.EventFlow.Outputs.LokiOutputFactory, Microsoft.Diagnostics.EventFlow.Outputs.Loki"
+    }
+  ],
+  "schemaVersion": "2016-08-11"
+}

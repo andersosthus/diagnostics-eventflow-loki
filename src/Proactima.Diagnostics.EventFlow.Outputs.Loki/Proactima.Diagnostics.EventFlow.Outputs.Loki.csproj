@@ -1,12 +1,13 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
 	<TargetFrameworks>netstandard1.6;netstandard2.0;net472</TargetFrameworks>
 	<AssemblyName>Proactima.Diagnostics.EventFlow.Outputs.Loki</AssemblyName>
     <RootNamespace>Proactima.Diagnostics.EventFlow.Outputs.Loki</RootNamespace>
 	<LangVersion></LangVersion>
-    <Version>0.9.4</Version>
+    <Version>0.9.6</Version>
 	<PackageLicenseExpression>MIT</PackageLicenseExpression>
+	<Deterministic>True</Deterministic>
   </PropertyGroup>
 
   <PropertyGroup>

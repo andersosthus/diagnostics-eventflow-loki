@@ -30,7 +30,7 @@
     {
       "category": "outputFactory",
       "type": "Loki",
-      "qualifiedTypeName": "Microsoft.Diagnostics.EventFlow.Outputs.LokiOutputFactory, Microsoft.Diagnostics.EventFlow.Outputs.Loki"
+      "qualifiedTypeName": "Proactima.Diagnostics.EventFlow.Outputs.LokiOutputFactory, Proactima.Diagnostics.EventFlow.Outputs.Loki"
     }
   ],
   "schemaVersion": "2016-08-11"

@@ -1,7 +1,8 @@
 # diagnostics-eventflow-loki
 
 ## Introduction
-Extensions to Microsoft Diagnostics EventFlow to output to Loki
+Extensions to Microsoft Diagnostics EventFlow to output to [Grafana Loki](https://grafana.com/docs/loki/latest/).
+Based on [Microsoft.Diagnostics.EventFlow.Outputs.HttpOutput](https://github.com/Azure/diagnostics-eventflow/)
 
 **Outputs**
 - [Loki](#loki)

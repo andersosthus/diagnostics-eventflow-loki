@@ -19,18 +19,18 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
 {
     public class LokiOutput : IOutput
     {
-        private IHttpClient httpClient;
+        private IHttpClient _httpClient;
         public static readonly string TraceTag = nameof(LokiOutput);
 
-        private readonly IHealthReporter healthReporter;
-        private LokiOutputConfiguration configuration;
+        private readonly IHealthReporter _healthReporter;
+        private LokiOutputConfiguration _configuration;
 
         public LokiOutput(IConfiguration configuration, IHealthReporter healthReporter, IHttpClient httpClient = null)
         {
             Requires.NotNull(configuration, nameof(configuration));
             Requires.NotNull(healthReporter, nameof(healthReporter));
 
-            this.healthReporter = healthReporter;
+            _healthReporter = healthReporter;
 
             var LokiOutputConfiguration = new LokiOutputConfiguration();
             try
@@ -52,28 +52,26 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
             Requires.NotNull(configuration, nameof(configuration));
             Requires.NotNull(healthReporter, nameof(healthReporter));
 
-            this.healthReporter = healthReporter;
+            _healthReporter = healthReporter;
 
             // Clone the configuration instance since we are going to hold onto it (via this.connectionData)
             Initialize(configuration.DeepClone(), httpClient);
         }
-
-        public JsonSerializerSettings SerializerSettings { get; set; }
 
         private void Initialize(LokiOutputConfiguration configuration, IHttpClient httpClient)
         {
             string errorMessage;
 
             Debug.Assert(configuration != null);
-            Debug.Assert(this.healthReporter != null);
+            Debug.Assert(this._healthReporter != null);
 
-            this.httpClient = httpClient ?? new StandardHttpClient();
-            this.configuration = configuration;
+            _httpClient = httpClient ?? new StandardHttpClient();
+            _configuration = configuration;
 
-            if (string.IsNullOrWhiteSpace(this.configuration.LokiUri))
+            if (string.IsNullOrWhiteSpace(_configuration.LokiUri))
             {
-                var errMsg = $"{nameof(LokiOutput)}: no ServiceUri configured";
-                healthReporter.ReportProblem(errMsg);
+                var errMsg = $"{nameof(LokiOutput)}: no LokiUri configured";
+                _healthReporter.ReportProblem(errMsg);
                 throw new Exception(errMsg);
             }
 
@@ -83,27 +81,25 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
             if (credentialsIncomplete)
             {
                 errorMessage = $"{nameof(configuration)}: for basic authentication to work both user name and password must be specified";
-                healthReporter.ReportWarning(errorMessage, EventFlowContextIdentifiers.Configuration);
+                _healthReporter.ReportWarning(errorMessage, EventFlowContextIdentifiers.Configuration);
                 userName = password = null;
             }
 
             if (!string.IsNullOrWhiteSpace(userName) && !string.IsNullOrWhiteSpace(password))
             {
                 string httpAuthValue = Convert.ToBase64String(Encoding.ASCII.GetBytes(string.Format("{0}:{1}", userName, password)));
-                this.httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", httpAuthValue);
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", httpAuthValue);
             }
 
             if (!string.IsNullOrWhiteSpace(configuration.XScopeOrgId))
             {
-                this.httpClient.DefaultRequestHeaders.Add("X-Scope-OrgId", configuration.XScopeOrgId);
+                _httpClient.DefaultRequestHeaders.Add("X-Scope-OrgId", configuration.XScopeOrgId);
             }
 
             foreach (KeyValuePair<string, string> header in configuration.Headers)
             {
-                this.httpClient.DefaultRequestHeaders.Add(header.Key, header.Value);
+                _httpClient.DefaultRequestHeaders.Add(header.Key, header.Value);
             }
-
-            SerializerSettings = EventFlowJsonUtilities.GetDefaultSerializerSettings();
         }
 
         public async Task SendEventsAsync(IReadOnlyCollection<EventData> events, long transmissionSequenceNumber, CancellationToken cancellationToken)
@@ -123,15 +119,13 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
                     sb.Clear();
 
                     var labels = new Dictionary<string, string>();
-                    foreach (var mapping in configuration.FieldsToLabels)
+                    foreach (var mapping in _configuration.FieldsToLabels)
                     {
-                        object val = null;
-                        e.Payload.TryGetValue(mapping, out val);
+                        e.Payload.TryGetValue(mapping, out object val);
                         labels[mapping] = val as string ?? string.Empty;
                     }
 
-                    object message = null;
-                    e.Payload.TryGetValue("Message", out message);
+                    e.Payload.TryGetValue("Message", out object message);
 
                     sb.Append("level=");
                     sb.Append(e.Level.GetName());
@@ -146,12 +140,12 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
 
                 }
 
-                var streams = StreamGrouper.Process(items, configuration.StaticLabels);
+                var streams = StreamGrouper.Process(items, _configuration.StaticLabels);
                 var payload = new LokiStreams { Streams = streams };
 
                 HttpResponseMessage response;
 
-                if (configuration.GzipPayload)
+                if (_configuration.GzipPayload)
                 {
                     response = await SendGzipJsonAsync(payload);
                 }
@@ -161,14 +155,14 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
                 }
 
                 response.EnsureSuccessStatusCode();
-                this.healthReporter.ReportHealthy();
+                _healthReporter.ReportHealthy();
             }
             catch (Exception e)
             {
                 ErrorHandlingPolicies.HandleOutputTaskError(e, () =>
                 {
                     string errorMessage = nameof(LokiOutput) + ": diagnostic data upload failed: " + Environment.NewLine + e.ToString();
-                    this.healthReporter.ReportWarning(errorMessage, EventFlowContextIdentifiers.Output);
+                    _healthReporter.ReportWarning(errorMessage, EventFlowContextIdentifiers.Output);
                 });
             }
         }
@@ -178,7 +172,7 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
             var payload = JsonConvert.SerializeObject(streams);
 
             var content = new StringContent(payload.ToString(), Encoding.UTF8, "application/json");
-            return await httpClient.PostAsync(new Uri(configuration.LokiUri), content);
+            return await _httpClient.PostAsync(new Uri(_configuration.LokiUri), content);
         }
 
         private async Task<HttpResponseMessage> SendGzipJsonAsync(LokiStreams streams)
@@ -202,19 +196,19 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
                 content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
                 content.Headers.Add("Content-Encoding", "gzip");
 
-                return await httpClient.PostAsync(new Uri(configuration.LokiUri), content);
+                return await _httpClient.PostAsync(new Uri(_configuration.LokiUri), content);
             }
         }
 
         private class StandardHttpClient : IHttpClient
         {
-            private HttpClient httpClient = new HttpClient();
+            private readonly HttpClient _httpClient = new HttpClient();
 
-            public HttpRequestHeaders DefaultRequestHeaders => this.httpClient.DefaultRequestHeaders;
+            public HttpRequestHeaders DefaultRequestHeaders => _httpClient.DefaultRequestHeaders;
 
             public Task<HttpResponseMessage> PostAsync(Uri requestUri, HttpContent content)
             {
-                return this.httpClient.PostAsync(requestUri, content);
+                return _httpClient.PostAsync(requestUri, content);
             }
         }
     }

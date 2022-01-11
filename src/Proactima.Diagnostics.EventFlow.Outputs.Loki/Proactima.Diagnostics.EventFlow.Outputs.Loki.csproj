@@ -5,7 +5,7 @@
 	<AssemblyName>Proactima.Diagnostics.EventFlow.Outputs.Loki</AssemblyName>
     <RootNamespace>Proactima.Diagnostics.EventFlow.Outputs.Loki</RootNamespace>
 	<LangVersion></LangVersion>
-    <Version>0.9.6</Version>
+    <Version>0.9.7</Version>
 	<PackageLicenseExpression>MIT</PackageLicenseExpression>
 	<Deterministic>True</Deterministic>
   </PropertyGroup>

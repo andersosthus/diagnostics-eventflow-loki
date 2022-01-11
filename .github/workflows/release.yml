@@ -21,4 +21,14 @@ jobs:
     - name: Test
       run: dotnet test --no-build --verbosity normal -c Release -l trx
     - name: Nuget Pack
-      run: dotnet pack .\src\Microsoft.Diagnostics.EventFlow.Outputs.Loki\Microsoft.Diagnostics.EventFlow.Outputs.Loki.csproj -c Release --no-build -o .\artifacts
+      run: dotnet pack ./src/Microsoft.Diagnostics.EventFlow.Outputs.Loki/Microsoft.Diagnostics.EventFlow.Outputs.Loki.csproj -c Release --no-build -o ./artifacts
+    - name: Nuget Push
+      run: dotnet nuget push ./artifacts --source $NUGET_URL --api-key $NUGET_API_KEY
+      env:
+        NUGET_URL: https://api.nuget.org/v3/index.json
+        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+    - name: Artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: artifacts
+        path: artifacts/**/*

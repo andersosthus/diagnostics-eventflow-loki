@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Microsoft.Diagnostics.EventFlow.Outputs.Loki\Microsoft.Diagnostics.EventFlow.Outputs.Loki.csproj" />
+    <ProjectReference Include="..\..\src\Proactima.Diagnostics.EventFlow.Outputs.Loki\Proactima.Diagnostics.EventFlow.Outputs.Loki.csproj" />
   </ItemGroup>
 
   <ItemGroup>

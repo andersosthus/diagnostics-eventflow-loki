@@ -5,7 +5,7 @@
 	<AssemblyName>Proactima.Diagnostics.EventFlow.Outputs.Loki</AssemblyName>
     <RootNamespace>Proactima.Diagnostics.EventFlow.Outputs.Loki</RootNamespace>
 	<LangVersion></LangVersion>
-    <Version>0.9.7</Version>
+    <Version>0.9.8</Version>
 	<PackageLicenseExpression>MIT</PackageLicenseExpression>
 	<Deterministic>True</Deterministic>
   </PropertyGroup>
@@ -21,6 +21,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.EventFlow.Core" Version="1.10.3" />
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+    <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0" />
   </ItemGroup>
 
 	<ItemGroup Condition=" '$(TargetFramework)' == 'net472' ">

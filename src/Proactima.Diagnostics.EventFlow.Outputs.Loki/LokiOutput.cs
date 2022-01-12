@@ -10,6 +10,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Security.Authentication;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -216,7 +217,17 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
 
         private class StandardHttpClient : IHttpClient
         {
-            private readonly HttpClient _httpClient = new HttpClient();
+            private readonly HttpClient _httpClient;
+
+            public StandardHttpClient()
+            {
+                var handler = new HttpClientHandler
+                {
+                    SslProtocols = SslProtocols.Tls12,
+                };
+
+                _httpClient = new HttpClient(handler);
+            }
 
             public HttpRequestHeaders DefaultRequestHeaders => _httpClient.DefaultRequestHeaders;
 
@@ -238,7 +249,8 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
                     ServerCertificateCustomValidationCallback = (httpRequestMessage, cert, cetChain, policyErrors) =>
                     {
                         return true;
-                    }
+                    },
+                    SslProtocols = SslProtocols.Tls12,
                 };
 
                 _httpClient = new HttpClient(handler);

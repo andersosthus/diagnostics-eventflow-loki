@@ -25,7 +25,7 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
         private readonly IHealthReporter _healthReporter;
         private LokiOutputConfiguration _configuration;
 
-        public LokiOutput(IConfiguration configuration, IHealthReporter healthReporter, IHttpClient httpClient = null)
+        public LokiOutput(IConfiguration configuration, IHealthReporter healthReporter)
         {
             Requires.NotNull(configuration, nameof(configuration));
             Requires.NotNull(healthReporter, nameof(healthReporter));
@@ -46,10 +46,10 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
                 throw;
             }
 
-            Initialize(LokiOutputConfiguration, httpClient);
+            Initialize(LokiOutputConfiguration);
         }
 
-        public LokiOutput(LokiOutputConfiguration configuration, IHealthReporter healthReporter, IHttpClient httpClient = null)
+        public LokiOutput(LokiOutputConfiguration configuration, IHealthReporter healthReporter)
         {
             Requires.NotNull(configuration, nameof(configuration));
             Requires.NotNull(healthReporter, nameof(healthReporter));
@@ -57,18 +57,27 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
             _healthReporter = healthReporter;
 
             // Clone the configuration instance since we are going to hold onto it (via this.connectionData)
-            Initialize(configuration.DeepClone(), httpClient);
+            Initialize(configuration.DeepClone());
         }
 
-        private void Initialize(LokiOutputConfiguration configuration, IHttpClient httpClient)
+        private void Initialize(LokiOutputConfiguration configuration)
         {
             string errorMessage;
 
             Debug.Assert(configuration != null);
-            Debug.Assert(this._healthReporter != null);
+            Debug.Assert(_healthReporter != null);
 
-            _httpClient = httpClient ?? new StandardHttpClient();
-            _configuration = configuration;
+            IHttpClient httpClient = null;
+            if (configuration.InsecureHTTPS)
+            {
+                httpClient = new InsecureHttpClient();
+            }
+            else
+            {
+                httpClient = new StandardHttpClient();
+            }
+
+            _httpClient = httpClient;
 
             if (string.IsNullOrWhiteSpace(_configuration.LokiUri))
             {
@@ -139,7 +148,7 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
                     items.Add(new LokiItem
                     {
                         Labels = labels,
-                        Payload = new [] { (e.Timestamp.ToUnixTimeMilliseconds() * 1000000).ToString() , sb.ToString()},
+                        Payload = new[] { (e.Timestamp.ToUnixTimeMilliseconds() * 1000000).ToString(), sb.ToString() },
                     });
 
                 }
@@ -207,6 +216,32 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
         private class StandardHttpClient : IHttpClient
         {
             private readonly HttpClient _httpClient = new HttpClient();
+
+            public HttpRequestHeaders DefaultRequestHeaders => _httpClient.DefaultRequestHeaders;
+
+            public Task<HttpResponseMessage> PostAsync(Uri requestUri, HttpContent content)
+            {
+                return _httpClient.PostAsync(requestUri, content);
+            }
+        }
+
+        private class InsecureHttpClient : IHttpClient
+        {
+            private readonly HttpClient _httpClient;
+
+            public InsecureHttpClient()
+            {
+                var handler = new HttpClientHandler
+                {
+                    ClientCertificateOptions = ClientCertificateOption.Manual,
+                    ServerCertificateCustomValidationCallback = (httpRequestMessage, cert, cetChain, policyErrors) =>
+                    {
+                        return true;
+                    }
+                };
+
+                _httpClient = new HttpClient(handler);
+            }
 
             public HttpRequestHeaders DefaultRequestHeaders => _httpClient.DefaultRequestHeaders;
 

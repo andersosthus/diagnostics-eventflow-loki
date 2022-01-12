@@ -9,7 +9,8 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Configuration
         public string BasicAuthenticationUserName { get; set; }
         public string BasicAuthenticationUserPassword { get; set; }
         public string XScopeOrgId { get; set; }
-        public bool GzipPayload { get; set; }
+        public bool GzipPayload { get; set; } = true;
+        public bool InsecureHTTPS { get; set; } = false;
         public List<string> FieldsToLabels { get; set; }
         public Dictionary<string, string> StaticLabels { get; set; }
         public Dictionary<string, string> Headers { get; set; }
@@ -28,6 +29,7 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Configuration
                 BasicAuthenticationUserPassword = this.BasicAuthenticationUserPassword,
                 XScopeOrgId = this.XScopeOrgId,
                 GzipPayload = this.GzipPayload,
+                InsecureHTTPS = this.InsecureHTTPS,
                 FieldsToLabels = this.FieldsToLabels,
                 StaticLabels = this.StaticLabels,
                 Headers = new Dictionary<string, string>(this.Headers)

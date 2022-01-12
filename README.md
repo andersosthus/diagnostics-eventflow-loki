@@ -24,6 +24,7 @@ This output writes data to Loki. Here is an example showing all possible setting
       "type": "Loki",
       "lokiUri": "http://localhost:3100/loki/api/v1/push",
       "gzipPayload": true,
+      "insecureHttps": false,
       "xScopeOrgId": "",
       "fieldsToLabels": ["EventName"],
       "staticLabels": {
@@ -46,6 +47,7 @@ This output writes data to Loki. Here is an example showing all possible setting
 | `type` | `Loki`      | Yes      | Specifies the output type. For this output, it must be *Loki* |
 | `lokiUri` | string   | Yes      | Full URI of the Loki endpoint |
 | `gzipPayload` | bool | No       | If the payload should be gzipped before sending |
+| `insecureHttps` | bool | No     | If true, allows untrusted certs on the Loki endpoint |
 | `xScopeOrgId` | string | No     | A value to add as the X-Scope-OrgId header |
 | `fieldsToLabel` | string[] | No | A set of fields in the Event that should be added as labels |
 | `staticLabels` | Dictionary<string, string> | No | A set of labels to be added to all logs |

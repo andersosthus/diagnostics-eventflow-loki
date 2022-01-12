@@ -36,10 +36,12 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
             try
             {
                 configuration.Bind(LokiOutputConfiguration);
+
+                _healthReporter.ReportHealthy($"{nameof(LokiOutput)}: Loaded configuration with values: '{configuration}'");
             }
             catch
             {
-                healthReporter.ReportProblem($"Invalid {nameof(LokiOutput)} configuration encountered: '{configuration.ToString()}'",
+                _healthReporter.ReportProblem($"{nameof(LokiOutput)}: Invalid configuration encountered: '{configuration.ToString()}'",
                     EventFlowContextIdentifiers.Configuration);
                 throw;
             }
@@ -94,11 +96,13 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
             if (!string.IsNullOrWhiteSpace(configuration.XScopeOrgId))
             {
                 _httpClient.DefaultRequestHeaders.Add("X-Scope-OrgId", configuration.XScopeOrgId);
+                _healthReporter.ReportHealthy($"{nameof(LokiOutput)}: Added X-Scope-OrgId with value {configuration.XScopeOrgId}");
             }
 
             foreach (KeyValuePair<string, string> header in configuration.Headers)
             {
                 _httpClient.DefaultRequestHeaders.Add(header.Key, header.Value);
+                _healthReporter.ReportHealthy($"{nameof(LokiOutput)}: Added header {header.Key} with value {header.Value}");
             }
         }
 

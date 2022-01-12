@@ -162,11 +162,11 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
 
                 if (_configuration.GzipPayload)
                 {
-                    response = await SendGzipJsonAsync(payload);
+                    response = await SendGzipJsonAsync(payload).ConfigureAwait(false);
                 }
                 else
                 {
-                    response = await SendJsonAsync(payload);
+                    response = await SendJsonAsync(payload).ConfigureAwait(false);
                 }
 
                 response.EnsureSuccessStatusCode();
@@ -187,7 +187,7 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
             var payload = JsonConvert.SerializeObject(streams);
 
             var content = new StringContent(payload.ToString(), Encoding.UTF8, "application/json");
-            return await _httpClient.PostAsync(new Uri(_configuration.LokiUri), content);
+            return await _httpClient.PostAsync(new Uri(_configuration.LokiUri), content).ConfigureAwait(false);
         }
 
         private async Task<HttpResponseMessage> SendGzipJsonAsync(LokiStreams streams)
@@ -203,15 +203,15 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
                 jw.Flush();
                 jsonStream.Position = 0;
 
-                jsonStream.CopyTo(compressor);
-                await compressor.FlushAsync();
+                await jsonStream.CopyToAsync(compressor).ConfigureAwait(false);
+                await compressor.FlushAsync().ConfigureAwait(false);
                 compressed.Position = 0;
 
                 var content = new ByteArrayContent(compressed.ToArray());
                 content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
                 content.Headers.Add("Content-Encoding", "gzip");
 
-                return await _httpClient.PostAsync(new Uri(_configuration.LokiUri), content);
+                return await _httpClient.PostAsync(new Uri(_configuration.LokiUri), content).ConfigureAwait(false);
             }
         }
 

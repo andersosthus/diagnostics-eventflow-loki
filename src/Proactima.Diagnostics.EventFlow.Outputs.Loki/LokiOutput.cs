@@ -41,7 +41,7 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
             }
             catch
             {
-                _healthReporter.ReportProblem($"{nameof(LokiOutput)}: Invalid configuration encountered: '{configuration.ToString()}'",
+                _healthReporter.ReportProblem($"{nameof(LokiOutput)}: Invalid configuration encountered: '{configuration}'",
                     EventFlowContextIdentifiers.Configuration);
                 throw;
             }
@@ -63,12 +63,13 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
         private void Initialize(LokiOutputConfiguration configuration)
         {
             string errorMessage;
+            _configuration = configuration;
 
             Debug.Assert(configuration != null);
             Debug.Assert(_healthReporter != null);
 
             IHttpClient httpClient = null;
-            if (configuration.InsecureHTTPS)
+            if (_configuration.InsecureHTTPS)
             {
                 httpClient = new InsecureHttpClient();
             }
@@ -86,8 +87,8 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
                 throw new Exception(errMsg);
             }
 
-            string userName = configuration.BasicAuthenticationUserName;
-            string password = configuration.BasicAuthenticationUserPassword;
+            string userName = _configuration.BasicAuthenticationUserName;
+            string password = _configuration.BasicAuthenticationUserPassword;
             bool credentialsIncomplete = string.IsNullOrWhiteSpace(userName) ^ string.IsNullOrWhiteSpace(password);
             if (credentialsIncomplete)
             {

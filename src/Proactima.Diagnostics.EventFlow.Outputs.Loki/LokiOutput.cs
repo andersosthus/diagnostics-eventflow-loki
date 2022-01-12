@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Authentication;
@@ -69,17 +70,7 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
             Debug.Assert(configuration != null);
             Debug.Assert(_healthReporter != null);
 
-            IHttpClient httpClient = null;
-            if (_configuration.InsecureHTTPS)
-            {
-                httpClient = new InsecureHttpClient();
-            }
-            else
-            {
-                httpClient = new StandardHttpClient();
-            }
-
-            _httpClient = httpClient;
+            _httpClient = new StandardHttpClient();
 
             if (string.IsNullOrWhiteSpace(_configuration.LokiUri))
             {
@@ -133,14 +124,21 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
                 {
                     sb.Clear();
 
+                    // if message is empty, skip this event
+                    e.Payload.TryGetValue("Message", out object message);
+                    if (string.IsNullOrWhiteSpace(message as string))
+                    {
+                        continue;
+                    }
+
                     var labels = new Dictionary<string, string>();
                     foreach (var mapping in _configuration.FieldsToLabels)
                     {
-                        e.Payload.TryGetValue(mapping, out object val);
-                        labels[mapping] = val as string ?? string.Empty;
+                        if (e.Payload.TryGetValue(mapping, out object val))
+                        {
+                            labels[mapping] = val as string ?? string.Empty;
+                        }
                     }
-
-                    e.Payload.TryGetValue("Message", out object message);
 
                     sb.Append("level=");
                     sb.Append(e.Level.GetName());
@@ -158,16 +156,33 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
                 var streams = StreamGrouper.Process(items, _configuration.StaticLabels);
                 var payload = new LokiStreams { Streams = streams };
 
-                HttpResponseMessage response;
-
                 if (_configuration.GzipPayload)
                 {
-                    response = await SendGzipJsonAsync(payload).ConfigureAwait(false);
+                    await SendGzipJsonAsync(payload).ConfigureAwait(false);
                 }
                 else
                 {
-                    response = await SendJsonAsync(payload).ConfigureAwait(false);
+                    await SendJsonAsync(payload).ConfigureAwait(false);
                 }
+            }
+            catch (Exception e)
+            {
+                ErrorHandlingPolicies.HandleOutputTaskError(e, () =>
+                {
+                    string errorMessage = nameof(LokiOutput) + ": diagnostic data upload failed: " + Environment.NewLine + e.ToString();
+                    _healthReporter.ReportWarning(errorMessage, EventFlowContextIdentifiers.Output);
+                });
+            }
+        }
+
+        private async Task SendJsonAsync(LokiStreams streams)
+        {
+            try
+            {
+                var payload = JsonConvert.SerializeObject(streams);
+
+                var content = new StringContent(payload.ToString(), Encoding.UTF8, "application/json");
+                var response = await _httpClient.PostAsync(new Uri(_configuration.LokiUri), content).ConfigureAwait(false);
 
                 response.EnsureSuccessStatusCode();
                 _healthReporter.ReportHealthy();
@@ -182,79 +197,43 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
             }
         }
 
-        private async Task<HttpResponseMessage> SendJsonAsync(LokiStreams streams)
+        private async Task SendGzipJsonAsync(LokiStreams logData)
         {
-            var payload = JsonConvert.SerializeObject(streams);
-
-            var content = new StringContent(payload.ToString(), Encoding.UTF8, "application/json");
-            return await _httpClient.PostAsync(new Uri(_configuration.LokiUri), content).ConfigureAwait(false);
-        }
-
-        private async Task<HttpResponseMessage> SendGzipJsonAsync(LokiStreams streams)
-        {
-            var serializer = JsonSerializer.Create();
-            using (var jsonStream = new MemoryStream())
-            using (var sw = new StreamWriter(jsonStream))
-            using (var jw = new JsonTextWriter(sw))
-            using (var compressed = new MemoryStream())
-            using (var compressor = new GZipStream(compressed, CompressionMode.Compress))
+            try
             {
-                serializer.Serialize(jw, streams);
-                jw.Flush();
-                jsonStream.Position = 0;
+                using(var compressed = new MemoryStream())
+                {
+                    using(var gzipStream = new GZipStream(compressed, CompressionMode.Compress, true))
+                    using (var streamWriter = new StreamWriter(gzipStream))
+                    using (var jsonWriter = new JsonTextWriter(streamWriter))
+                    {
+                        var serializer = JsonSerializer.Create();
+                        serializer.Serialize(jsonWriter, logData);
+                    }
+                    compressed.Position = 0;
 
-                await jsonStream.CopyToAsync(compressor).ConfigureAwait(false);
-                await compressor.FlushAsync().ConfigureAwait(false);
-                compressed.Position = 0;
+                    var content = new StreamContent(compressed);
+                    content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+                    content.Headers.Add("Content-Encoding", "gzip");
 
-                var content = new ByteArrayContent(compressed.ToArray());
-                content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-                content.Headers.Add("Content-Encoding", "gzip");
-
-                return await _httpClient.PostAsync(new Uri(_configuration.LokiUri), content).ConfigureAwait(false);
+                    var response = await _httpClient.PostAsync(new Uri(_configuration.LokiUri), content).ConfigureAwait(false);
+                    response.EnsureSuccessStatusCode();
+                    _healthReporter.ReportHealthy();
+                }
+            }
+            catch (Exception e)
+            {
+                ErrorHandlingPolicies.HandleOutputTaskError(e, () =>
+                {
+                    string errorMessage = nameof(LokiOutput) + ": diagnostic data upload failed: " + Environment.NewLine + e.ToString();
+                    _healthReporter.ReportWarning(errorMessage, EventFlowContextIdentifiers.Output);
+                });
             }
         }
 
         private class StandardHttpClient : IHttpClient
         {
-            private readonly HttpClient _httpClient;
-
-            public StandardHttpClient()
-            {
-                var handler = new HttpClientHandler
-                {
-                    SslProtocols = SslProtocols.Tls12,
-                };
-
-                _httpClient = new HttpClient(handler);
-            }
-
-            public HttpRequestHeaders DefaultRequestHeaders => _httpClient.DefaultRequestHeaders;
-
-            public Task<HttpResponseMessage> PostAsync(Uri requestUri, HttpContent content)
-            {
-                return _httpClient.PostAsync(requestUri, content);
-            }
-        }
-
-        private class InsecureHttpClient : IHttpClient
-        {
-            private readonly HttpClient _httpClient;
-
-            public InsecureHttpClient()
-            {
-                var handler = new HttpClientHandler
-                {
-                    ClientCertificateOptions = ClientCertificateOption.Manual,
-                    ServerCertificateCustomValidationCallback = (httpRequestMessage, cert, cetChain, policyErrors) =>
-                    {
-                        return true;
-                    },
-                    SslProtocols = SslProtocols.Tls12,
-                };
-
-                _httpClient = new HttpClient(handler);
-            }
+            private readonly HttpClient _httpClient = new HttpClient();
 
             public HttpRequestHeaders DefaultRequestHeaders => _httpClient.DefaultRequestHeaders;
 

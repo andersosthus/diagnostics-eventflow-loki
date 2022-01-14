@@ -49,3 +49,4 @@ This output writes data to Loki. Here is an example showing all possible setting
 | `xScopeOrgId` | string | No     | A value to add as the X-Scope-OrgId header |
 | `fieldsToLabel` | string[] | No | A set of fields in the Event that should be added as labels |
 | `staticLabels` | Dictionary<string, string> | No | A set of labels to be added to all logs |
+| `skipFields` | string[] | No | A set of fields to exclude from the log message |

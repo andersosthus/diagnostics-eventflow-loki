@@ -11,11 +11,15 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Configuration
         public string XScopeOrgId { get; set; }
         public bool GzipPayload { get; set; } = true;
         public List<string> FieldsToLabels { get; set; }
-        public Dictionary<string, string> StaticLabels { get; set; }
+        public List<string> SkipFields { get; set; }
+        public Dictionary<string, string> StaticLabels { get; set; } 
         public Dictionary<string, string> Headers { get; set; }
 
         public LokiOutputConfiguration()
         {
+            FieldsToLabels = new List<string>();
+            SkipFields = new List<string>();
+            StaticLabels = new Dictionary<string, string>();
             Headers = new Dictionary<string, string>();
         }
 
@@ -30,6 +34,7 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Configuration
                 GzipPayload = this.GzipPayload,
                 FieldsToLabels = this.FieldsToLabels,
                 StaticLabels = this.StaticLabels,
+                SkipFields = this.SkipFields,
                 Headers = new Dictionary<string, string>(this.Headers)
             };
 

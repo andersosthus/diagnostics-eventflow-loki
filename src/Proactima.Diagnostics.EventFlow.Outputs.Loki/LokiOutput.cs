@@ -1,4 +1,5 @@
 ﻿using Microsoft.Diagnostics.EventFlow;
+using Microsoft.Diagnostics.EventFlow.Metadata;
 using Microsoft.Diagnostics.EventFlow.Utilities;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
@@ -122,14 +123,12 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
 
                 foreach (var e in events)
                 {
-                    sb.Clear();
-
-                    // if message is empty, skip this event
-                    e.Payload.TryGetValue("Message", out object message);
-                    if (string.IsNullOrWhiteSpace(message as string))
+                    if (cancellationToken.IsCancellationRequested)
                     {
-                        continue;
+                        return;
                     }
+
+                    sb.Clear();
 
                     var labels = new Dictionary<string, string>();
                     foreach (var mapping in _configuration.FieldsToLabels)
@@ -142,15 +141,32 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
 
                     sb.Append("level=");
                     sb.Append(e.Level.GetName());
-                    sb.Append(' ');
-                    sb.Append(message);
+
+                    foreach (var kvp in e.Payload)
+                    {
+                        if (_configuration.SkipFields.Contains(kvp.Key))
+                        {
+                            continue;
+                        }
+
+                        var val = kvp.Value as string;
+                        if (string.IsNullOrWhiteSpace(val))
+                        {
+                            continue;
+                        }
+
+                        sb.Append(' ');
+                        sb.Append(kvp.Key.Replace("\"\"", ""));
+                        sb.Append("=\"");
+                        sb.Append(val.Replace("\"\"", ""));
+                        sb.Append("\"");
+                    }
 
                     items.Add(new LokiItem
                     {
                         Labels = labels,
                         Payload = new[] { (e.Timestamp.ToUnixTimeMilliseconds() * 1000000).ToString(), sb.ToString() },
                     });
-
                 }
 
                 var streams = StreamGrouper.Process(items, _configuration.StaticLabels);
@@ -201,9 +217,9 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
         {
             try
             {
-                using(var compressed = new MemoryStream())
+                using (var compressed = new MemoryStream())
                 {
-                    using(var gzipStream = new GZipStream(compressed, CompressionMode.Compress, true))
+                    using (var gzipStream = new GZipStream(compressed, CompressionMode.Compress, true))
                     using (var streamWriter = new StreamWriter(gzipStream))
                     using (var jsonWriter = new JsonTextWriter(streamWriter))
                     {

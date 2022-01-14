@@ -11,10 +11,10 @@ namespace Console.ETW
 
         private const int TestEventId = 200;
 
-        [Event(TestEventId, Message = "My message with body {0}", Level = EventLevel.Informational, Keywords = Keywords.Services)]
-        public void TestEvent(string body)
+        [Event(TestEventId, Message = "My message with body {0} with more {2}", Level = EventLevel.Informational, Keywords = Keywords.Services)]
+        public void TestEvent(string body, string other, string more)
         {
-            if(IsEnabled()) WriteEvent(TestEventId, body);
+            if(IsEnabled()) WriteEvent(TestEventId, body, other, more);
         }
 
         public class Keywords

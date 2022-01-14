@@ -31,7 +31,7 @@ namespace Console.ETW
                     //} while (true);
 
                     await Task.Delay(TimeSpan.FromSeconds(2));
-                    ETWSource.Log.TestEvent($"generated message");
+                    ETWSource.Log.TestEvent($"generated message", "random stuff", "another thing");
                 });
             });
 

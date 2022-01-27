@@ -1,5 +1,4 @@
 ﻿using Microsoft.Diagnostics.EventFlow;
-using Microsoft.Diagnostics.EventFlow.Metadata;
 using Microsoft.Diagnostics.EventFlow.Utilities;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
@@ -9,10 +8,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
-using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Security.Authentication;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,6 +20,9 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
     public class LokiOutput : IOutput
     {
         private IHttpClient _httpClient;
+        private const string Iso8601 = "O";
+        private static Lazy<Random> RandomGenerator = new Lazy<Random>();
+
         public static readonly string TraceTag = nameof(LokiOutput);
 
         private readonly IHealthReporter _healthReporter;
@@ -118,8 +118,11 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
 
             try
             {
-                var sb = new StringBuilder();
                 var items = new List<LokiItem>();
+
+                var sb = new StringBuilder();
+                var keys = new Dictionary<string, string>();
+                var labels = new Dictionary<string, string>();
 
                 foreach (var e in events)
                 {
@@ -128,9 +131,11 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
                         return;
                     }
 
+                    // Reset some resources
                     sb.Clear();
+                    keys.Clear();
+                    labels.Clear();
 
-                    var labels = new Dictionary<string, string>();
                     foreach (var mapping in _configuration.FieldsToLabels)
                     {
                         if (e.Payload.TryGetValue(mapping, out object val))
@@ -149,16 +154,35 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
                             continue;
                         }
 
-                        var val = kvp.Value as string;
-                        if (string.IsNullOrWhiteSpace(val))
+                        var value = ParsePayloadItem(kvp);
+
+                        if (string.IsNullOrWhiteSpace(value))
                         {
                             continue;
                         }
 
                         sb.Append(' ');
-                        sb.Append(kvp.Key.Replace("\"\"", ""));
+
+                        var key = kvp.Key.Replace("\"\"", "");
+                        if(!keys.ContainsKey(key))
+                        {
+                            sb.Append(key);
+                            sb.Append("=\"");
+                            sb.Append(value.Replace("\"\"", ""));
+                            sb.Append("\"");
+
+                            continue;
+                        }
+
+                        var newKey = key + "_";
+                        do
+                        {
+                            newKey += RandomGenerator.Value.Next(0, 10);
+                        } while (keys.ContainsKey(newKey));
+
+                        sb.Append(newKey);
                         sb.Append("=\"");
-                        sb.Append(val.Replace("\"\"", ""));
+                        sb.Append(value.Replace("\"\"", ""));
                         sb.Append("\"");
                     }
 
@@ -188,6 +212,29 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
                     string errorMessage = nameof(LokiOutput) + ": diagnostic data upload failed: " + Environment.NewLine + e.ToString();
                     _healthReporter.ReportWarning(errorMessage, EventFlowContextIdentifiers.Output);
                 });
+            }
+        }
+
+        private static string ParsePayloadItem(KeyValuePair<string, object> kvp)
+        {
+            object value = kvp.Value;
+
+            if (value == null)
+            {
+                return string.Empty;
+            }
+
+            if (value is DateTime)
+            {
+                return ((DateTime)value).ToString(Iso8601);
+            }
+            else if (value is DateTimeOffset)
+            {
+                return ((DateTimeOffset)value).ToString(Iso8601);
+            }
+            else
+            {
+                return value.ToString();
             }
         }
 

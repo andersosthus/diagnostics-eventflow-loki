@@ -121,7 +121,7 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
                 var items = new List<LokiItem>();
 
                 var sb = new StringBuilder();
-                var keys = new Dictionary<string, string>();
+                var keys = new List<string>();
                 var labels = new Dictionary<string, string>();
 
                 foreach (var e in events)
@@ -164,8 +164,10 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
                         sb.Append(' ');
 
                         var key = kvp.Key.Replace("\"\"", "");
-                        if(!keys.ContainsKey(key))
+                        if(!keys.Contains(key))
                         {
+                            keys.Add(key);
+
                             sb.Append(key);
                             sb.Append("=\"");
                             sb.Append(value.Replace("\"\"", ""));
@@ -178,8 +180,9 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
                         do
                         {
                             newKey += RandomGenerator.Value.Next(0, 10);
-                        } while (keys.ContainsKey(newKey));
+                        } while (keys.Contains(newKey));
 
+                        keys.Add(newKey);
                         sb.Append(newKey);
                         sb.Append("=\"");
                         sb.Append(value.Replace("\"\"", ""));

@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -122,26 +123,28 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
 
                 var sb = new StringBuilder();
                 var keys = new List<string>();
-                var labels = new Dictionary<string, string>();
 
-                foreach (var e in events)
+                foreach (var e in events.TakeWhile(_ => !cancellationToken.IsCancellationRequested))
                 {
-                    if (cancellationToken.IsCancellationRequested)
-                    {
-                        return;
-                    }
-
                     // Reset some resources
                     sb.Clear();
                     keys.Clear();
-                    labels.Clear();
+                    var labels = new Dictionary<string, string>();
 
+                    _healthReporter.ReportHealthy(JsonConvert.SerializeObject(e));
+
+                    labels["providerName"] = e.ProviderName;
                     foreach (var mapping in _configuration.FieldsToLabels)
                     {
-                        if (e.Payload.TryGetValue(mapping, out object val))
-                        {
-                            labels[mapping] = val as string ?? string.Empty;
-                        }
+                        if (!e.Payload.TryGetValue(mapping, out object val)) continue;
+
+                        // lowercase first letter since Grafana currently has an issue with Capital
+                        // first letter in label key
+                        sb.Append(mapping.Substring(0, 1).ToLowerInvariant());
+                        sb.Append(mapping.Substring(1));
+                        labels[sb.ToString()] = val as string ?? string.Empty;
+                        //_healthReporter.ReportHealthy($"added label {mapping}={val}");
+                        sb.Clear();
                     }
 
                     sb.Append("level=");
@@ -164,7 +167,7 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
                         sb.Append(' ');
 
                         var key = kvp.Key.Replace("\"\"", "");
-                        if(!keys.Contains(key))
+                        if (!keys.Contains(key))
                         {
                             keys.Add(key);
 
@@ -198,6 +201,8 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
 
                 var streams = StreamGrouper.Process(items, _configuration.StaticLabels);
                 var payload = new LokiStreams { Streams = streams };
+
+                _healthReporter.ReportHealthy(JsonConvert.SerializeObject(payload));
 
                 if (_configuration.GzipPayload)
                 {

@@ -29,10 +29,16 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki.Tests
                     },
                     Payload = new []{ "3", "message-three" }
                 },
+                new LokiItem {
+                    Labels = new Dictionary<string, string> {
+                        ["machine"] = "localhost",
+                    },
+                    Payload = new []{ "4", "message-four" }
+                },
             };
 
             var actual = StreamGrouper.Process(testEvents, new Dictionary<string, string>());
-            actual.Count.Should().Be(2);
+            actual.Count.Should().Be(3);
         }
 
         [Fact]

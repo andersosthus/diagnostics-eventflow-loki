@@ -8,6 +8,7 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Configuration
         public string LokiUri { get; set; }
         public string BasicAuthenticationUserName { get; set; }
         public string BasicAuthenticationUserPassword { get; set; }
+        public bool BasicAuthHeader { get; set; } = true;
         public string XScopeOrgId { get; set; }
         public bool GzipPayload { get; set; } = true;
         public List<string> FieldsToLabels { get; set; }
@@ -30,6 +31,7 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Configuration
                 LokiUri = this.LokiUri,
                 BasicAuthenticationUserName = this.BasicAuthenticationUserName,
                 BasicAuthenticationUserPassword = this.BasicAuthenticationUserPassword,
+                BasicAuthHeader = this.BasicAuthHeader,
                 XScopeOrgId = this.XScopeOrgId,
                 GzipPayload = this.GzipPayload,
                 FieldsToLabels = this.FieldsToLabels,

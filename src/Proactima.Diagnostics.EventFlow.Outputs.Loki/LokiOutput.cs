@@ -81,9 +81,9 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
                 throw new Exception(errMsg);
             }
 
-            string userName = _configuration.BasicAuthenticationUserName;
-            string password = _configuration.BasicAuthenticationUserPassword;
-            bool credentialsIncomplete = string.IsNullOrWhiteSpace(userName) ^ string.IsNullOrWhiteSpace(password);
+            var userName = _configuration.BasicAuthenticationUserName;
+            var password = _configuration.BasicAuthenticationUserPassword;
+            var credentialsIncomplete = string.IsNullOrWhiteSpace(userName) ^ string.IsNullOrWhiteSpace(password);
             if (credentialsIncomplete)
             {
                 errorMessage = $"{nameof(configuration)}: for basic authentication to work both user name and password must be specified";
@@ -93,8 +93,20 @@ namespace Proactima.Diagnostics.EventFlow.Outputs.Loki
 
             if (!string.IsNullOrWhiteSpace(userName) && !string.IsNullOrWhiteSpace(password))
             {
-                string httpAuthValue = Convert.ToBase64String(Encoding.ASCII.GetBytes(string.Format("{0}:{1}", userName, password)));
-                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", httpAuthValue);
+                if (_configuration.BasicAuthHeader)
+                {
+                    var httpAuthValue = Convert.ToBase64String(Encoding.ASCII.GetBytes(string.Format("{0}:{1}", userName, password)));
+                    _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", httpAuthValue);
+                }
+                else
+                {
+                    var builder = new UriBuilder(_configuration.LokiUri)
+                    {
+                        UserName = _configuration.BasicAuthenticationUserName,
+                        Password = _configuration.BasicAuthenticationUserPassword
+                    };
+                    _configuration.LokiUri = builder.ToString();
+                }
             }
 
             if (!string.IsNullOrWhiteSpace(configuration.XScopeOrgId))
